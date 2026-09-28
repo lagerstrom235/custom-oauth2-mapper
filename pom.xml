@@ -16,20 +16,15 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>org.thingsboard.mapper</groupId>
     <artifactId>oauth2-mapper</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-
     <name>Custom OAuth 2.0 Mapper</name>
     <url>http://thingsboard.org</url>
     <inceptionYear>2016</inceptionYear>
-
     <properties>
         <spring-boot.version>3.2.12</spring-boot.version>
         <spring-security.version>6.2.7</spring-security.version>
@@ -37,18 +32,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <thingsboard.version>3.9.1</thingsboard.version>
         <lombok.version>1.18.32</lombok.version>
-        <pkg.name>oauth2-mapper</pkg.name>
-        <pkg.user>thingsboard</pkg.user>
-        <pkg.installFolder>/usr/share/${pkg.name}</pkg.installFolder>
-        <pkg.unixLogFolder>/var/log/${pkg.name}</pkg.unixLogFolder>
-        <pkg.win.dist>${project.build.directory}/windows</pkg.win.dist>
-        <winsw.version>2.0.1</winsw.version>
-        <jupiter.version>5.10.2</jupiter.version> <!-- keep the same version as spring-boot-starter-test depend on jupiter-->
-        <oauth2-mapper.docker.name>oauth2-mapper</oauth2-mapper.docker.name>
-        <dockerfile.skip>true</dockerfile.skip>
-        <docker.repo>thingsboard</docker.repo>
+        <jupiter.version>5.10.2</jupiter.version>
     </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -87,22 +72,9 @@
             <version>${spring-boot.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.7.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.winsw</groupId>
-            <artifactId>winsw</artifactId>
-            <version>${winsw.version}</version>
-            <classifier>bin</classifier>
-            <type>exe</type>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.vintage</groupId>
@@ -111,21 +83,10 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
-        <finalName>${pkg.name}-${project.version}</finalName>
-        <resources>
-            <resource>
-                <directory>${project.basedir}/src/main/resources</directory>
-            </resource>
-        </resources>
+        <finalName>${project.artifactId}</finalName>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>com.spotify</groupId>
-                    <artifactId>dockerfile-maven-plugin</artifactId>
-                    <version>1.4.13</version>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -154,28 +115,13 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.1.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.thingsboard</groupId>
-                    <artifactId>gradle-maven-plugin</artifactId>
-                    <version>1.0.12</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -203,58 +149,17 @@
                         </properties>
                         <excludes>
                             <exclude>**/.env</exclude>
+                            <exclude>**/.env.*</exclude>
                             <exclude>**/*.env</exclude>
-                            <exclude>**/.eslintrc</exclude>
-                            <exclude>**/.babelrc</exclude>
-                            <exclude>**/.jshintrc</exclude>
-                            <exclude>**/.gradle/**</exclude>
-                            <exclude>**/nightwatch</exclude>
-                            <exclude>**/README</exclude>
+                            <exclude>**/README.md</exclude>
                             <exclude>**/LICENSE</exclude>
-                            <exclude>**/banner.txt</exclude>
-                            <exclude>node_modules/**</exclude>
-                            <exclude>**/*.properties</exclude>
-                            <exclude>src/test/resources/**</exclude>
-                            <exclude>src/vendor/**</exclude>
-                            <exclude>src/font/**</exclude>
-                            <exclude>src/sh/**</exclude>
-                            <exclude>packaging/*/scripts/control/**</exclude>
-                            <exclude>packaging/*/scripts/windows/**</exclude>
-                            <exclude>packaging/*/scripts/init/**</exclude>
-                            <exclude>**/*.log</exclude>
-                            <exclude>**/*.current</exclude>
-                            <exclude>.instance_id</exclude>
-                            <exclude>src/main/scripts/control/**</exclude>
-                            <exclude>src/main/scripts/windows/**</exclude>
-                            <exclude>**/*.tpl.txt</exclude>
-                            <exclude>**/src/index.html</exclude>
-                            <exclude>**/public/static/rulenode/**</exclude>
-                            <exclude>**/*.proto.js</exclude>
-                            <exclude>docker/haproxy/**</exclude>
-                            <exclude>docker/tb-node/**</exclude>
-                            <exclude>src/browserslist</exclude>
-                            <exclude>src/main/resources/models/*.xml</exclude>
-                            <exclude>src/main/resources/credentials/*.jks</exclude>
-                            <exclude>src/main/resources/credentials/shell/*.jks</exclude>
-                            <exclude>src/main/resources/credentials/shell/*.jks.old</exclude>
-                            <exclude>ui/**</exclude>
-                            <exclude>src/.browserslistrc</exclude>
-                            <exclude>**/yarn.lock</exclude>
-                            <exclude>**/*.raw</exclude>
-                            <exclude>.run/**</exclude>
-                            <exclude>docker/**</exclude>
-                            <exclude>**/apache/cassandra/io/**</exclude>
+                            <exclude>.dockerignore</exclude>
+                            <exclude>.gitignore</exclude>
+                            <exclude>Dockerfile</exclude>
+                            <exclude>.idea/**</exclude>
+                            <exclude>.vscode/**</exclude>
                             <exclude>.run/**</exclude>
                         </excludes>
-                        <mapping>
-                            <proto>JAVADOC_STYLE</proto>
-                            <cql>DOUBLEDASHES_STYLE</cql>
-                            <scss>JAVADOC_STYLE</scss>
-                            <jsx>SLASHSTAR_STYLE</jsx>
-                            <tsx>SLASHSTAR_STYLE</tsx>
-                            <conf>SCRIPT_STYLE</conf>
-                            <gradle>JAVADOC_STYLE</gradle>
-                        </mapping>
                     </configuration>
                     <executions>
                         <execution>
@@ -273,183 +178,8 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>com.sun.winsw</groupId>
-                                    <artifactId>winsw</artifactId>
-                                    <classifier>bin</classifier>
-                                    <type>exe</type>
-                                    <destFileName>service.exe</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>${pkg.win.dist}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-service-conf</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/conf</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources</directory>
-                                    <excludes>
-                                        <exclude>logback.xml</exclude>
-                                    </excludes>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>src/main/conf</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>src/main/filters/unix.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-win-conf</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${pkg.win.dist}/conf</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources</directory>
-                                    <excludes>
-                                        <exclude>logback.xml</exclude>
-                                    </excludes>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>src/main/conf</directory>
-                                    <excludes>
-                                        <exclude>oauth2-mapper.conf</exclude>
-                                    </excludes>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>src/main/filters/windows.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-control</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/control</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/scripts/control</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>src/main/filters/unix.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-windows-control</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${pkg.win.dist}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/scripts/windows</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>src/main/filters/windows.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-docker-service-conf</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/docker</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources</directory>
-                                    <excludes>
-                                        <exclude>logback.xml</exclude>
-                                    </excludes>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>src/main/conf</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>docker</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>src/main/filters/unix.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-docker-deb</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/docker</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.directory}</directory>
-                                    <includes>
-                                        <include>${pkg.name}.deb</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>**/logback.xml</exclude>
-                    </excludes>
                     <archive>
                         <manifestEntries>
                             <Implementation-Title>Custom OAuth2 Mapper</Implementation-Title>
@@ -461,18 +191,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <classifier>boot</classifier>
-                    <layout>ZIP</layout>
-                    <executable>true</executable>
-                    <excludeDevtools>true</excludeDevtools>
-                    <embeddedLaunchScriptProperties>
-                        <confFolder>${pkg.installFolder}/conf</confFolder>
-                        <logFolder>${pkg.unixLogFolder}</logFolder>
-                        <logFilename>${pkg.name}.out</logFilename>
-                        <initInfoProvides>${pkg.name}</initInfoProvides>
-                    </embeddedLaunchScriptProperties>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -481,122 +199,8 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.thingsboard</groupId>
-                <artifactId>gradle-maven-plugin</artifactId>
-                <configuration>
-                    <tasks>
-                        <task>build</task>
-                        <task>buildDeb</task>
-                        <task>buildRpm</task>
-                        <task>renameDeb</task>
-                        <task>renameRpm</task>
-                    </tasks>
-                    <args>
-                        <arg>-PprojectBuildDir=${project.build.directory}</arg>
-                        <arg>-PprojectVersion=${project.version}</arg>
-                        <arg>-PmainJar=${project.build.directory}/${project.build.finalName}-boot.${project.packaging}</arg>
-                        <arg>-PpkgName=${pkg.name}</arg>
-                        <arg>-PpkgUser=${pkg.user}</arg>
-                        <arg>-PpkgInstallFolder=${pkg.installFolder}</arg>
-                        <arg>-PpkgLogFolder=${pkg.unixLogFolder}</arg>
-                    </args>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>invoke</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <finalName>${pkg.name}</finalName>
-                    <descriptors>
-                        <descriptor>src/main/assembly/windows.xml</descriptor>
-                    </descriptors>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.spotify</groupId>
-                <artifactId>dockerfile-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>build-docker-tb-image</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${dockerfile.skip}</skip>
-                            <repository>${docker.repo}/${oauth2-mapper.docker.name}</repository>
-                            <verbose>true</verbose>
-                            <googleContainerRegistryEnabled>false</googleContainerRegistryEnabled>
-                            <contextDirectory>${project.build.directory}/docker</contextDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>tag-docker-tb-image</id>
-                        <phase>pre-integration-test</phase>
-                        <goals>
-                            <goal>tag</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${dockerfile.skip}</skip>
-                            <repository>${docker.repo}/${oauth2-mapper.docker.name}</repository>
-                            <tag>${project.version}</tag>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>push-docker-image</id>
-            <activation>
-                <property>
-                    <name>push-docker-image</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.spotify</groupId>
-                        <artifactId>dockerfile-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>push-version-docker-oauth2-mapper-image</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>push</goal>
-                                </goals>
-                                <configuration>
-                                    <tag>${project.version}</tag>
-                                    <repository>${docker.repo}/${oauth2-mapper.docker.name}</repository>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <repositories>
         <repository>
             <id>thingsboard-repo</id>
@@ -633,14 +237,6 @@
         <repository>
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public</url>
-        </repository>
-        <repository>
-            <id>jenkins</id>
-            <name>Jenkins Repository</name>
-            <url>https://repo.jenkins-ci.org/releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
         </repository>
     </repositories>
 </project>
