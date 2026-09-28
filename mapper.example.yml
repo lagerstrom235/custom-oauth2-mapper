@@ -1,0 +1,49 @@
+#
+# Copyright © 2016-2018 ThingsBoard, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Load this file with SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/mapper.yml
+mapper:
+  professional-edition: false
+  email:
+    attribute: /email
+  first-name:
+    attribute: /givenName
+  last-name:
+    attribute: /familyName
+
+  # Omit tenant-name and tenant-id to use "Tenant " + the mapped email domain.
+  # tenant-name:
+  #   attribute: /organization/name
+  #   prefix: "Tenant "
+  # tenant-id:
+  #   value: bc89e8f0-8ba9-11ea-97a9-0bc52285619a
+
+  # Configure either customer-name or customer-id.
+  # customer-name:
+  #   attribute: /CUSTOMER_NAME_ATTRIBUTE
+  # customer-id:
+  #   value: e78c0ab0-8ba9-11ea-97a9-0bc52285619a
+
+  # These options require professional-edition: true.
+  # Configure either parent-customer-name or parent-customer-id.
+  # parent-customer-name:
+  #   attribute: /PARENT_CUSTOMER_NAME_ATTRIBUTE
+  # parent-customer-id:
+  #   value: e78c0ab0-8ba9-11ea-97a9-0bc52285619a
+  # user-groups:
+  #   - value: Managers
+  #   - value: Tenant Administrators
+  #   - attribute: /CUSTOMER_USER_GROUP

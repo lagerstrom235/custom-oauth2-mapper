@@ -47,6 +47,27 @@ JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m
 
 `SERVER_PORT` defaults to `10010`; if you override it, adjust the container port in `-p` accordingly.
 
+## YAML mapping configuration
+
+Copy [mapper.example.yml](mapper.example.yml) to `mapper.yml` and edit the rules you need. Mount the file and load it as additional Spring configuration:
+
+```bash
+docker run --rm --env-file .env -p 10010:10010 \
+  --mount type=bind,source="$(pwd)/mapper.yml",target=/config/mapper.yml,readonly \
+  -e SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/mapper.yml \
+  thingsboard/oauth2-mapper
+```
+
+The file must be readable by container UID `10001`. Restart the container after changing it; no image rebuild is needed. A missing configured file prevents startup.
+
+Each rule uses exactly one of `attribute` (a JSON Pointer into the incoming user object, such as `/organization/name`) or `value` (a fixed string). An optional `prefix` is prepended to names, email, or groups. For keys containing `/` or `~`, escape them as `~1` or `~0` in the pointer.
+
+Supported rules are `email`, `first-name`, `last-name`, `tenant-name`, `tenant-id`, `customer-name`, and `customer-id`. Set `professional-edition: true` to additionally use `parent-customer-name`, `parent-customer-id`, and `user-groups`. Groups are a list of rules; each attribute can contain a string or an array of strings, which is expanded into the group list.
+
+Configure a name **or** an ID for each tenant/customer/parent customer. IDs must be UUIDs and cannot have prefixes. Invalid configuration fails startup, including PE-only options when Professional Edition is disabled. Unknown mapping settings are rejected to catch typos.
+
+Without configuration, the mapper reads `/email`, `/givenName`, and `/familyName`, sets the tenant name to `Tenant ` plus the mapped email domain, and leaves customer and PE fields unset. The default tenant name is used only when neither tenant rule is configured. Every configured attribute is required: missing, blank, or incorrectly typed values, invalid request UUIDs, and malformed JSON return HTTP 400. Authentication remains controlled by `CUSTOM_MAPPER_AUTH_*`.
+
 ## Validation on the Docker host
 
 Build from a clean checkout on a host with Docker alone, then start the container using the commands above. Check startup and console logs with `docker logs <container-id>`, and confirm the non-root identity with `docker exec <container-id> id` (UID/GID `10001`).

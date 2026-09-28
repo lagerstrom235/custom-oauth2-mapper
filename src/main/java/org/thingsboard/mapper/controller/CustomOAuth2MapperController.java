@@ -16,83 +16,99 @@
 package org.thingsboard.mapper.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.thingsboard.mapper.PEOAuth2User;
+import org.thingsboard.mapper.config.MappingProperties;
+import org.thingsboard.mapper.config.MappingProperties.Rule;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.dao.oauth2.OAuth2User;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/oauth2")
 public class CustomOAuth2MapperController {
+    private final MappingProperties mapping;
 
-    private static final ObjectMapper json = new ObjectMapper();
+    public CustomOAuth2MapperController(MappingProperties mapping) {
+        this.mapping = mapping;
+    }
 
-    @RequestMapping(value = "/mapper", method = RequestMethod.POST)
-    @ResponseBody
-    public OAuth2User map(@RequestBody String request) {
-        JsonNode externalUserInJson;
-        try {
-            externalUserInJson = json.readTree(request);
-        } catch (IOException e) {
-            throw new RuntimeException("Can't parse external user object", e);
+    @PostMapping("/mapper")
+    public OAuth2User map(@RequestBody JsonNode user) {
+        if (!user.isObject()) {
+            throw badRequest("Expected a JSON object");
         }
-        OAuth2User result = new OAuth2User();
-
-        // In case of PE please use PEOAuth2User
-        // PEOAuth2User result = new PEOAuth2User();
-
-        String email = externalUserInJson.get("email").asText();
+        OAuth2User result = mapping.isProfessionalEdition() ? new PEOAuth2User() : new OAuth2User();
+        String email = resolve(mapping.getEmail(), user, "email");
         result.setEmail(email);
+        result.setFirstName(resolve(mapping.getFirstName(), user, "first-name"));
+        result.setLastName(resolve(mapping.getLastName(), user, "last-name"));
 
-        String domain = email .substring(email .indexOf("@") + 1);
-
-        // Any attribute from the external user info object can be used as tenant name
-        result.setTenantName("Tenant " + domain);
-
-        // You can set directly Tenant ID instead of the Tenant Name
-        // result.setTenantId(new TenantId(UUID.fromString("bc89e8f0-8ba9-11ea-97a9-0bc52285619a")));
-
-        String firstName = externalUserInJson.get("givenName").asText();
-        result.setFirstName(firstName);
-
-        String lastName = externalUserInJson.get("familyName").asText();
-        result.setLastName(lastName);
-
-
-//        // If required, you can set Customer Name, and user is going to be created on the Customer level
-//        String customerName = externalUserInJson.get("CUSTOMER_NAME_ATTRIBUTE").asText();
-//        result.setCustomerName(email);
-
-
-//        // You can set directly Customer ID instead of the Customer Name
-//        result.setCustomerId(new CustomerId(UUID.fromString("e78c0ab0-8ba9-11ea-97a9-0bc52285619a")));
-
-        // ------
-        // Fields applicable for Professional Edition
-        // ------
-
-//        // If required, you can set Parent Customer Name, and Customer of the user is going to be created in the hierarchy under the Parent Customer
-//        String parentCustomerName = externalUserInJson.get("PARENT_CUSTOMER_NAME_ATTRIBUTE").asText();
-//        result.setParentCustomerName(parentCustomerName);
-//        // You can set directly Parent Customer ID instead of the Parent Customer Name
-//        result.setParentCustomerId(new CustomerId(UUID.fromString("e78c0ab0-8ba9-11ea-97a9-0bc52285619a")));
-
-//        // If required, you can set user groups, where user is going to be assigned
-//        ArrayList<String> userGroups = new ArrayList<>();
-//        userGroups.add("Managers");
-//        userGroups.add("Tenant Administrators");
-//        userGroups.add(externalUserInJson.get("CUSTOMER_USER_GROUP").asText());
-//        result.setUserGroups(userGroups);
-
+        if (mapping.getTenantId() != null) {
+            result.setTenantId(new TenantId(resolveId(mapping.getTenantId(), user, "tenant-id")));
+        } else if (mapping.getTenantName() != null) {
+            result.setTenantName(resolve(mapping.getTenantName(), user, "tenant-name"));
+        } else {
+            result.setTenantName("Tenant " + email.substring(email.indexOf('@') + 1));
+        }
+        if (mapping.getCustomerId() != null) {
+            result.setCustomerId(new CustomerId(resolveId(mapping.getCustomerId(), user, "customer-id")));
+        } else if (mapping.getCustomerName() != null) {
+            result.setCustomerName(resolve(mapping.getCustomerName(), user, "customer-name"));
+        }
+        if (result instanceof PEOAuth2User peUser) {
+            if (mapping.getParentCustomerId() != null) {
+                peUser.setParentCustomerId(new CustomerId(resolveId(mapping.getParentCustomerId(), user, "parent-customer-id")));
+            } else if (mapping.getParentCustomerName() != null) {
+                peUser.setParentCustomerName(resolve(mapping.getParentCustomerName(), user, "parent-customer-name"));
+            }
+            if (!mapping.getUserGroups().isEmpty()) {
+                List<String> groups = new ArrayList<>();
+                for (Rule rule : mapping.getUserGroups()) {
+                    if (rule.getAttribute() != null && user.at(rule.getAttribute()).isArray()) {
+                        for (JsonNode group : user.at(rule.getAttribute())) {
+                            groups.add(rule.getPrefix() + text(group, "user-groups"));
+                        }
+                    } else {
+                        groups.add(resolve(rule, user, "user-groups"));
+                    }
+                }
+                peUser.setUserGroups(groups);
+            }
+        }
         return result;
+    }
+
+    private String resolve(Rule rule, JsonNode user, String field) {
+        return rule.getPrefix() + (rule.getValue() != null
+                ? rule.getValue() : text(user.at(rule.getAttribute()), field));
+    }
+
+    private String text(JsonNode node, String field) {
+        if (!node.isTextual() || node.asText().isBlank()) {
+            throw badRequest("Missing or invalid string attribute for " + field);
+        }
+        return node.asText();
+    }
+
+    private UUID resolveId(Rule rule, JsonNode user, String field) {
+        try {
+            return MappingProperties.parseId(resolve(rule, user, field));
+        } catch (IllegalArgumentException e) {
+            throw badRequest("Invalid UUID for " + field);
+        }
+    }
+
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 }
