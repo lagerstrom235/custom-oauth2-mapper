@@ -9,7 +9,7 @@ You can combine this Custom Mapper with [ThingsBoard REST API Client](https://th
 
 ## Prerequisites
 
-Docker with BuildKit support is the only required build tool. Java 17 and Maven 3.9 run inside the builder container; no host Java, Maven, or Gradle installation is needed. Docker is the supported distribution workflow.
+Docker with BuildKit support is the only required build tool. Java 25 (LTS) and Maven 3.9 run inside the builder container; no host Java, Maven, or Gradle installation is needed. Docker is the supported distribution workflow.
 
 ## Build
 
@@ -19,7 +19,7 @@ From the repository root:
 docker build -t thingsboard/oauth2-mapper .
 ```
 
-The multi-stage build runs `mvn -B -ntp verify`, including license checks and any tests, then copies the executable Spring Boot JAR into an Eclipse Temurin 17 JRE image. Maven downloads are cached across builds using a BuildKit cache mount.
+The multi-stage build runs `mvn -B -ntp verify`, including license checks and any tests, then copies the executable Spring Boot JAR into an Eclipse Temurin 25 JRE image. Maven downloads are cached across builds using a BuildKit cache mount.
 
 ## Running
 
@@ -46,6 +46,23 @@ JAVA_TOOL_OPTIONS=-Xms128m -Xmx512m
 ```
 
 `SERVER_PORT` defaults to `10010`; if you override it, adjust the container port in `-p` accordingly.
+
+## Logging
+
+Logging uses SLF4J with Logback and writes to the console at INFO level by default.
+In any Java class, import `lombok.extern.slf4j.Slf4j` and annotate the class with
+`@Slf4j` to use `log.info("Message: {}", value)`, `log.debug(...)`, or `log.warn(...)`.
+The controller logs successful mappings at DEBUG and mapping validation failures at WARN,
+without logging user attributes or credentials.
+
+To enable DEBUG logs for the mapper, add this to `.env` and recreate the container:
+
+```dotenv
+LOGGING_LEVEL_SH_LAGERSTROM_MAPPER=DEBUG
+```
+
+View output with `docker logs -f <container-id>`. Console formatting is configured in
+`src/main/resources/logback.xml`. Avoid logging OAuth tokens, credentials, or user payloads.
 
 ## YAML mapping configuration
 
@@ -84,3 +101,14 @@ curl -i -u admin:password \
 Expect HTTP 200 with mapped fields including `email: alice@example.com`, `firstName: Alice`, `lastName: Smith`, and `tenantName: Tenant example.com`. Repeat the same request without `-u admin:password`, then with `-u admin:incorrect`; both should return HTTP 401 while authentication is enabled.
 
 Stop the container with `docker stop <container-id>` and confirm that it exits cleanly. After a source change, rebuild with `docker build --progress=plain -t thingsboard/oauth2-mapper .`; Maven should reuse previously downloaded artifacts from the cache (provided the same builder is used and its cache has not been pruned).
+
+## License and provenance
+
+This sh.lagerstrom fork is licensed under the [Apache License, Version 2.0](LICENSE).
+It derives from the ThingsBoard Custom OAuth 2.0 mapper; the original ThingsBoard
+copyright and license notices are retained. Changes in this fork include
+configuration-based user mapping, the `sh.lagerstrom.mapper` namespace, and build
+and runtime updates. Modified source files carry modification notices.
+
+The Maven JAR includes the license under `META-INF/LICENSE` (inside `BOOT-INF/classes`
+in the executable Spring Boot JAR), and the Docker image includes `/app/LICENSE`.

@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.mapper;
+// Modified in the sh.lagerstrom fork: package namespace and project adaptations.
+package sh.lagerstrom.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -26,8 +27,8 @@ import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.thingsboard.mapper.config.MappingProperties;
-import org.thingsboard.mapper.controller.CustomOAuth2MapperController;
+import sh.lagerstrom.mapper.config.MappingProperties;
+import sh.lagerstrom.mapper.controller.CustomOAuth2MapperController;
 import org.thingsboard.server.dao.oauth2.OAuth2User;
 
 import java.nio.charset.StandardCharsets;

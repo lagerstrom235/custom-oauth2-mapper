@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.mapper.controller;
+// Modified in the sh.lagerstrom fork: package namespace and project adaptations.
+package sh.lagerstrom.mapper.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.thingsboard.mapper.PEOAuth2User;
-import org.thingsboard.mapper.config.MappingProperties;
-import org.thingsboard.mapper.config.MappingProperties.Rule;
+import sh.lagerstrom.mapper.PEOAuth2User;
+import sh.lagerstrom.mapper.config.MappingProperties;
+import sh.lagerstrom.mapper.config.MappingProperties.Rule;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.dao.oauth2.OAuth2User;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/oauth2")
 public class CustomOAuth2MapperController {
@@ -85,6 +88,7 @@ public class CustomOAuth2MapperController {
                 peUser.setUserGroups(groups);
             }
         }
+        log.debug("OAuth2 user mapping completed (professionalEdition={})", mapping.isProfessionalEdition());
         return result;
     }
 
@@ -109,6 +113,7 @@ public class CustomOAuth2MapperController {
     }
 
     private ResponseStatusException badRequest(String message) {
+        log.warn("OAuth2 user mapping rejected: {}", message);
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 }
