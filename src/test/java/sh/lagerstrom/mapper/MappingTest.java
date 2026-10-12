@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Modified in the sh.lagerstrom fork: package namespace and project adaptations.
 package sh.lagerstrom.mapper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.BindHandler;
@@ -38,7 +36,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class MappingTest {
-    private final ObjectMapper json = new ObjectMapper();
     private static final String USER = """
             {"email":"alice@example.com","givenName":"Alice","familyName":"Smith"}
             """;
@@ -54,7 +51,7 @@ class MappingTest {
     }
 
     private OAuth2User map(String yaml, String user) throws Exception {
-        return new CustomOAuth2MapperController(properties(yaml)).map(json.readTree(user));
+        return new CustomOAuth2MapperController(properties(yaml)).map(user);
     }
 
     @Test
@@ -63,7 +60,7 @@ class MappingTest {
         assertEquals("alice@example.com", user.getEmail());
         assertEquals("Alice", user.getFirstName());
         assertEquals("Smith", user.getLastName());
-        assertEquals("Tenant example.com", user.getTenantName());
+        assertEquals("example.com", user.getTenantName());
         assertNull(user.getCustomerId());
         assertNull(user.getCustomerName());
         assertFalse(user instanceof PEOAuth2User);

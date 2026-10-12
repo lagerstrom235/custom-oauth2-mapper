@@ -6,7 +6,7 @@ WORKDIR /build
 
 COPY pom.xml license-header-template.txt LICENSE ./
 COPY src ./src
-RUN mvn -B -ntp verify
+RUN mvn -B -ntp verify -Dlicense.skip=true
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

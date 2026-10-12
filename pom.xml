@@ -21,18 +21,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>sh.lagerstrom.mapper</groupId>
     <artifactId>oauth2-mapper</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
     <name>Custom OAuth 2.0 Mapper</name>
-    <url>http://thingsboard.org</url>
-    <inceptionYear>2016</inceptionYear>
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+    <url>https://github.com/lagerstrom235/custom-oauth2-mapper</url>
+    <inceptionYear>2026</inceptionYear>
     <properties>
         <java.version>25</java.version>
         <spring-boot.version>3.5.16</spring-boot.version>

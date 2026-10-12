@@ -16,8 +16,21 @@
 // Modified in the sh.lagerstrom fork: package namespace and project adaptations.
 package sh.lagerstrom.mapper.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+package sh.lagerstrom.mapper.controller;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.StreamSupport;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,11 +44,10 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.dao.oauth2.OAuth2User;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Slf4j
 @RestController
 @RequestMapping(path = "/oauth2")
 public class CustomOAuth2MapperController {
@@ -46,7 +58,15 @@ public class CustomOAuth2MapperController {
     }
 
     @PostMapping("/mapper")
-    public OAuth2User map(@RequestBody JsonNode user) {
+    public OAuth2User map(@RequestBody String body) {
+        final JsonNode user;
+
+        try {
+            user = (new ObjectMapper()).readTree(body);
+        } catch (JsonProcessingException e) {
+            throw badRequest("Expected valid JSON");
+        }
+
         if (!user.isObject()) {
             throw badRequest("Expected a JSON object");
         }
@@ -57,12 +77,13 @@ public class CustomOAuth2MapperController {
         result.setLastName(resolve(mapping.getLastName(), user, "last-name"));
 
         if (mapping.getTenantId() != null) {
-            result.setTenantId(new TenantId(resolveId(mapping.getTenantId(), user, "tenant-id")));
+            result.setTenantId(TenantId.fromUUID(resolveId(mapping.getTenantId(), user, "tenant-id")));
         } else if (mapping.getTenantName() != null) {
             result.setTenantName(resolve(mapping.getTenantName(), user, "tenant-name"));
         } else {
-            result.setTenantName("Tenant " + email.substring(email.indexOf('@') + 1));
+            result.setTenantName(email.substring(email.indexOf('@') + 1));
         }
+
         if (mapping.getCustomerId() != null) {
             result.setCustomerId(new CustomerId(resolveId(mapping.getCustomerId(), user, "customer-id")));
         } else if (mapping.getCustomerName() != null) {
@@ -88,7 +109,51 @@ public class CustomOAuth2MapperController {
                 peUser.setUserGroups(groups);
             }
         }
-        log.debug("OAuth2 user mapping completed (professionalEdition={})", mapping.isProfessionalEdition());
+
+        if (System.getenv("CUSTOM_MAPPER_TB_API_URL") != null && System.getenv("CUSTOM_MAPPER_TB_API_URL").length() > 0) {
+            HttpClient httpClient = HttpClient.newHttpClient();
+            String tenantIdOrName = result.getTenantId() != null
+                ? result.getTenantId().toString()
+                : result.getTenantName();
+
+            String encodedSearch = URLEncoder.encode(
+                    tenantIdOrName, StandardCharsets.UTF_8
+            );
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create(String.format(
+                        "%s/api/tenants?pageSize=%s&page=0&textSearch=%s",
+                        System.getenv("CUSTOM_MAPPER_TB_API_URL"),
+                        Integer.MAX_VALUE,
+                        encodedSearch
+                )))
+                .header("X-Authorization", String.format("ApiKey %s", System.getenv("CUSTOM_MAPPER_TB_API_KEY")))
+                .build();
+
+            final JsonNode tenants;
+            try {
+                HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                tenants = (new ObjectMapper()).readTree(httpResponse.body());
+            } catch (IOException | InterruptedException e) {
+                throw badRequest("Expected valid JSON");
+            }
+
+            JsonNode tenant;
+            if (tenants.get("totalElements").asInt() > 0) {
+                tenant = StreamSupport.stream(tenants.get("data").spliterator(), false)
+                    .filter(node -> 
+                        (result.getTenantId() != null && node.path("id").path("id").asText().equals(result.getTenantId().toString())) ||
+                        (result.getTenantName() != null && node.path("name").asText().equals(result.getTenantName()))
+                    ).findFirst().orElse(null);
+            } else {
+                tenant = null;
+            }
+
+            String tenantId = tenant != null
+                    ? tenant.path("id").path("id").asText()
+                    : null;
+        }
+
         return result;
     }
 
@@ -113,7 +178,50 @@ public class CustomOAuth2MapperController {
     }
 
     private ResponseStatusException badRequest(String message) {
-        log.warn("OAuth2 user mapping rejected: {}", message);
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    private Boolean userInTenant(String tenantId, String email) {
+        String encodedSearch = URLEncoder.encode(
+                email, StandardCharsets.UTF_8
+        );
+
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(String.format(
+                    "%s/api/tenant/%s/users?pageSize=%s&page=0&textSearch=%s",
+                    System.getenv("CUSTOM_MAPPER_TB_API_URL"),
+                    tenantId,
+                    Integer.MAX_VALUE,
+                    encodedSearch
+            )))
+            .header("X-Authorization", String.format("ApiKey %s", System.getenv("CUSTOM_MAPPER_TB_API_KEY")))
+            .build();
+
+        HttpClient httpClient = HttpClient.newHttpClient();
+        final JsonNode response;
+        try {
+            HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            response = (new ObjectMapper()).readTree(httpResponse.body());
+        } catch (IOException | InterruptedException e) {
+            throw badRequest(e.getMessage());
+        }
+
+
+        JsonNode user;
+        if (response.get("totalElements").asInt() > 0) {
+            user = StreamSupport.stream(response.get("data").spliterator(), false)
+                .filter(node -> 
+                    node.path("email").asText().equals(email)
+                ).findFirst().orElse(null);
+        } else {
+            user = null;
+        }
+
+        if (user != null) {
+            return true;
+        }
+
+        return false;
+
     }
 }
