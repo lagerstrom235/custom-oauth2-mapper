@@ -17,7 +17,6 @@
 package sh.lagerstrom.mapper.controller;
 
 import lombok.extern.slf4j.Slf4j;
-package sh.lagerstrom.mapper.controller;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,6 +47,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/oauth2")
 public class CustomOAuth2MapperController {
@@ -59,6 +59,8 @@ public class CustomOAuth2MapperController {
 
     @PostMapping("/mapper")
     public OAuth2User map(@RequestBody String body) {
+        log.debug("Starting OAuth2 mapping: professionalEdition={}", mapping.isProfessionalEdition());
+        log.debug("Custom OAuth2 mapper request body: {}", body);
         final JsonNode user;
 
         try {
@@ -81,6 +83,7 @@ public class CustomOAuth2MapperController {
         } else if (mapping.getTenantName() != null) {
             result.setTenantName(resolve(mapping.getTenantName(), user, "tenant-name"));
         } else {
+            log.debug("Resolving tenant name from email domain");
             result.setTenantName(email.substring(email.indexOf('@') + 1));
         }
 
@@ -107,6 +110,7 @@ public class CustomOAuth2MapperController {
                     }
                 }
                 peUser.setUserGroups(groups);
+                log.debug("Resolved OAuth2 user groups: count={}", groups.size());
             }
         }
 
@@ -131,10 +135,14 @@ public class CustomOAuth2MapperController {
                 .build();
 
             final JsonNode tenants;
+            log.debug("Starting ThingsBoard tenant lookup: searchBy={}",
+                    result.getTenantId() != null ? "id" : "name");
             try {
                 HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                logLookupStatus("tenant", httpResponse.statusCode());
                 tenants = (new ObjectMapper()).readTree(httpResponse.body());
             } catch (IOException | InterruptedException e) {
+                log.debug("ThingsBoard tenant lookup failed: exceptionType={}", e.getClass().getSimpleName());
                 throw badRequest("Expected valid JSON");
             }
 
@@ -152,12 +160,21 @@ public class CustomOAuth2MapperController {
             String tenantId = tenant != null
                     ? tenant.path("id").path("id").asText()
                     : null;
+            log.debug("Completed ThingsBoard tenant lookup: totalElements={}, exactMatch={}",
+                    tenants.path("totalElements").asInt(), tenant != null);
+        } else {
+            log.debug("Skipping ThingsBoard tenant lookup: CUSTOM_MAPPER_TB_API_URL is not configured");
         }
 
+        log.debug("Completed OAuth2 mapping: tenantIdSet={}, tenantNameSet={}, customerIdSet={}, customerNameSet={}",
+                result.getTenantId() != null, result.getTenantName() != null,
+                result.getCustomerId() != null, result.getCustomerName() != null);
         return result;
     }
 
     private String resolve(Rule rule, JsonNode user, String field) {
+        log.debug("Resolving OAuth2 mapping field: field={}, source={}",
+                field, rule.getValue() != null ? "configured value" : "user attribute");
         return rule.getPrefix() + (rule.getValue() != null
                 ? rule.getValue() : text(user.at(rule.getAttribute()), field));
     }
@@ -178,10 +195,20 @@ public class CustomOAuth2MapperController {
     }
 
     private ResponseStatusException badRequest(String message) {
+        log.warn("OAuth2 mapping rejected: {}", message);
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 
+    private void logLookupStatus(String lookup, int statusCode) {
+        if (statusCode < 200 || statusCode >= 300) {
+            log.warn("ThingsBoard lookup returned unsuccessful HTTP status: lookup={}, status={}", lookup, statusCode);
+        } else {
+            log.debug("ThingsBoard lookup HTTP response: lookup={}, status={}", lookup, statusCode);
+        }
+    }
+
     private Boolean userInTenant(String tenantId, String email) {
+        log.debug("Starting ThingsBoard tenant user lookup");
         String encodedSearch = URLEncoder.encode(
                 email, StandardCharsets.UTF_8
         );
@@ -201,9 +228,11 @@ public class CustomOAuth2MapperController {
         final JsonNode response;
         try {
             HttpResponse<String> httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            logLookupStatus("tenant user", httpResponse.statusCode());
             response = (new ObjectMapper()).readTree(httpResponse.body());
         } catch (IOException | InterruptedException e) {
-            throw badRequest(e.getMessage());
+            log.warn("ThingsBoard tenant user lookup failed: exceptionType={}", e.getClass().getSimpleName());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
 
@@ -217,6 +246,8 @@ public class CustomOAuth2MapperController {
             user = null;
         }
 
+        log.debug("Completed ThingsBoard tenant user lookup: totalElements={}, exactMatch={}",
+                response.path("totalElements").asInt(), user != null);
         if (user != null) {
             return true;
         }
